@@ -1,0 +1,55 @@
+#define _XTAL_FREQ 8000000
+
+#include <xc.h>
+#include "Config.h"
+
+// Define the float switch and pump pins
+#define TANK1_LOW   PORTDbits.RD2
+#define TANK2_FULL  PORTDbits.RD3
+#define PUMP1       PORTDbits.RD0
+#define PUMP2       PORTDbits.RD1
+
+// Function prototypes
+void initialize();
+void controlPumps();
+
+void main(void) {
+    initialize();
+    
+    while (1) {
+        controlPumps();
+    }
+}
+
+void initialize() {
+    // Set RD0, RD1 as output for pumps
+    TRISD = 0b00001100; // RD0 and RD1 as output, RD2 and RD3 as input
+    PORTD = 0;          // Initialize all outputs to low
+}
+
+void controlPumps() {
+    static unsigned char pumpState = 0; // 0 for Pump1 ON, 1 for Pump2 ON
+    static unsigned char currentPump = 0; // 0 for Pump1, 1 for Pump2
+
+    // Check the conditions for tank levels
+    if (TANK1_LOW == 0 && TANK2_FULL == 1) {
+        // Tank1 is low and Tank2 is full
+        if (currentPump == 0) {
+            PUMP1 = 1; // Turn Pump1 ON
+            PUMP2 = 0; // Turn Pump2 OFF
+            currentPump = 1; // Next time, switch to Pump2
+        } else {
+            PUMP1 = 0; // Turn Pump1 OFF
+            PUMP2 = 1; // Turn Pump2 ON
+            currentPump = 0; // Next time, switch to Pump1
+        }
+    } else {
+        // If not in the condition to run pumps, turn both off
+        PUMP1 = 0; // Turn Pump1 OFF
+        PUMP2 = 0; // Turn Pump2 OFF
+    
+    }
+    
+    // Add a small delay to prevent rapid switching
+    __delay_ms(500); // Adjust the delay as necessary
+}
